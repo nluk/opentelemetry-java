@@ -7,6 +7,7 @@ package io.opentelemetry.exporter.prometheus;
 
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.common.InstrumentationScopeInfo;
@@ -106,6 +107,28 @@ class Otel2PrometheusConverterTest {
     String metricLabels =
         metricLine.substring(metricLine.indexOf("{") + 1, metricLine.indexOf("}"));
     assertThat(metricLabels).isEqualTo(expectedMetricLabels);
+  }
+
+  @Test
+  void prometheusNameCollisionTest() {
+    MetricData dotName = createSampleMetricData(
+        "my.metric",
+        "units",
+        MetricDataType.LONG_SUM,
+        Attributes.empty(),
+        Resource.create(Attributes.empty()));
+    MetricData underscoreName = createSampleMetricData(
+        "my_metric",
+        "units",
+        MetricDataType.LONG_SUM,
+        Attributes.empty(),
+        Resource.create(Attributes.empty()));
+
+    List<MetricData> metricData = new ArrayList<>();
+    metricData.add(dotName);
+    metricData.add(underscoreName);
+
+    assertThatCode(() -> converter.convert(metricData)).doesNotThrowAnyException();
   }
 
   private static Stream<Arguments> resourceAttributesAdditionArgs() {
